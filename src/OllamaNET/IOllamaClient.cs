@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using OllamaNET.Models;
+﻿using OllamaNET.Models;
 
 namespace OllamaNET;
 

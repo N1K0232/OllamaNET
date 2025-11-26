@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace OllamaNET.Models;
+﻿namespace OllamaNET.Models;
 
 internal static class OllamaRoles
 {
