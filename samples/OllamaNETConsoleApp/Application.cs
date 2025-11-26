@@ -15,8 +15,17 @@ public class Application(IOllamaClient client)
             Console.Write("Ask me anything: ");
             message = Console.ReadLine();
 
-            var response = await client.AskAsync(conversationId, message!);
-            Console.WriteLine(response.Message?.Content);
+            Console.WriteLine();
+            Console.WriteLine();
+
+            var responseStream = client.AskStreamingAsync(conversationId, message!);
+
+            await foreach (var response in responseStream)
+            {
+                await Task.Delay(10);
+                Console.Write(response.Message!.Content);
+            }
+
             Console.WriteLine();
         }
         while (!string.IsNullOrWhiteSpace(message));

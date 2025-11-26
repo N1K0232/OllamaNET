@@ -1,7 +1,11 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net.Mime;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json;
 using OllamaNET.Caching;
+using OllamaNET.Exceptions;
 using OllamaNET.Models;
 
 namespace OllamaNET;
@@ -35,8 +39,13 @@ internal class OllamaClient : IOllamaClient
         var request = CreateRequest(messages, false, chatOptions, model);
 
         using var httpResponse = await httpClient.PostAsJsonAsync("api/chat", request, cancellationToken).ConfigureAwait(false);
-        var response = await httpResponse.Content.ReadFromJsonAsync<OllamaChatResponse>(cancellationToken).ConfigureAwait(false);
+        if (!httpResponse.IsSuccessStatusCode)
+        {
+            var content = await httpResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            throw new OllamaClientException(content, (int)httpResponse.StatusCode);
+        }
 
+        var response = await httpResponse.Content.ReadFromJsonAsync<OllamaChatResponse>(cancellationToken).ConfigureAwait(false);
         if (addToConversationHistory)
         {
             await AddAssistantResponseAsync(conversationId, messages, response!.Message, cancellationToken).ConfigureAwait(false);
@@ -47,8 +56,60 @@ internal class OllamaClient : IOllamaClient
 
     public async IAsyncEnumerable<OllamaChatResponse> AskStreamingAsync(Guid conversationId, string message, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await Task.Delay(100, cancellationToken).ConfigureAwait(false);
-        yield return new OllamaChatResponse();
+        ArgumentException.ThrowIfNullOrWhiteSpace(message, nameof(message));
+        conversationId = conversationId == Guid.Empty ? Guid.CreateVersion7() : conversationId;
+
+        var messages = await CreateMessageListAsync(conversationId, message, cancellationToken).ConfigureAwait(false);
+        var request = CreateRequest(messages, true, chatOptions, model);
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/chat")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, MediaTypeNames.Application.Json)
+        };
+
+        using var httpResponse = await httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        if (!httpResponse.IsSuccessStatusCode)
+        {
+            var content = await httpResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            throw new OllamaClientException(content, (int)httpResponse.StatusCode);
+        }
+
+        var contentBuilder = new StringBuilder();
+
+        using var responseStream = await httpResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        using var streamReader = new StreamReader(responseStream);
+
+        while(!streamReader.EndOfStream)
+        {
+            var line = await streamReader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            var chunk = JsonSerializer.Deserialize<OllamaStreamChunk>(line);
+            if (chunk?.Message?.Content is not null)
+            {
+                var content = chunk.Message.Content;
+                contentBuilder.Append(content);
+
+                yield return new OllamaChatResponse
+                {
+                    Message = chunk.Message,
+                    Model = chunk.Model!
+                };
+            }
+
+            if (chunk?.Done ?? false)
+            {
+                break;
+            }
+        }
+
+        if (addToConversationHistory)
+        {
+            await AddAssistantResponseAsync(conversationId, messages, new() { Content = contentBuilder.ToString(), Role = OllamaRoles.Assistant }, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     public async Task<Guid> SetupAsync(Guid conversationId, string message, CancellationToken cancellationToken = default)
