@@ -1,0 +1,28 @@
+using OllamaNET;
+using OllamaNET.Extensions;
+using OllamaNET.WebApi.Models;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddOpenApi();
+builder.Services.AddOllamaClient().WithMemoryCache();
+
+var app = builder.Build();
+app.UseHttpsRedirection();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", app.Environment.ApplicationName);
+    });
+}
+
+app.MapPost("/api/ask", async (ChatRequest request, IOllamaClient client, HttpContext httpContext) =>
+{
+    var response = await client.AskAsync(request.ConversationId, request.Message, cancellationToken: httpContext.RequestAborted);
+    return TypedResults.Ok(new ChatResponse(response.Message?.Content!));
+});
+
+app.Run();
