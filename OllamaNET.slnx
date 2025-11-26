@@ -1,1 +1,8 @@
-<Solution />
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/OllamaNETConsoleApp/OllamaNETConsoleApp.csproj" Id="0dbca020-f345-48d5-a38a-0191d5c5d771" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/OllamaNET/OllamaNET.csproj" Id="34b95a24-e0c0-4a3c-8c7f-fa03a2fb3e16" />
+  </Folder>
+</Solution>
