@@ -19,10 +19,26 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.MapPost("/api/ask", async (ChatRequest request, IOllamaClient client, HttpContext httpContext) =>
+app.MapPost("/api/chat/ask", async (ChatRequest request, IOllamaClient client, HttpContext httpContext) =>
 {
     var response = await client.AskAsync(request.ConversationId, request.Message, cancellationToken: httpContext.RequestAborted);
     return TypedResults.Ok(new ChatResponse(response.Message?.Content!));
+});
+
+app.MapPost("/api/chat/stream", async (ChatRequest request, IOllamaClient client, HttpContext httpContext) =>
+{
+    return Stream();
+
+    async IAsyncEnumerable<string> Stream()
+    {
+        var responseStream = client.AskStreamingAsync(request.ConversationId, request.Message, cancellationToken: httpContext.RequestAborted);
+
+        await foreach (var response in responseStream)
+        {
+            await Task.Delay(10, httpContext.RequestAborted);
+            yield return response.Message.Content;
+        }
+    }
 });
 
 app.Run();
