@@ -79,9 +79,10 @@ internal class OllamaClient : IOllamaClient
         using var responseStream = await httpResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         using var streamReader = new StreamReader(responseStream);
 
-        while(!streamReader.EndOfStream)
+        string? line = null;
+
+        while ((line = await streamReader.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != null)
         {
-            var line = await streamReader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(line))
             {
                 continue;
@@ -146,7 +147,7 @@ internal class OllamaClient : IOllamaClient
 
     public async Task DeleteConversationAsync(Guid conversationId, bool preserveSetup = false, CancellationToken cancellationToken = default)
     {
-        if(!preserveSetup)
+        if (!preserveSetup)
         {
             await cache.RemoveAsync(conversationId, cancellationToken).ConfigureAwait(false);
         }
@@ -159,6 +160,22 @@ internal class OllamaClient : IOllamaClient
                 await cache.SetAsync(conversationId, messages, options.MessageExpiration, cancellationToken).ConfigureAwait(false);
             }
         }
+    }
+
+    public async Task<OllamaEmbeddingResponse> CreateEmbeddingAsync(string content, string? model = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(content, nameof(content));
+
+        var request = new OllamaEmbeddingRequest
+        {
+            Model = !string.IsNullOrWhiteSpace(model) ? model : options.DefaultEmbeddingModel,
+            Prompt = content
+        };
+
+        using var httpResponse = await httpClient.PostAsJsonAsync("api/embeddings", request, cancellationToken).ConfigureAwait(false);
+        var response = await httpResponse.Content.ReadFromJsonAsync<OllamaEmbeddingResponse>(cancellationToken).ConfigureAwait(false);
+
+        return response!;
     }
 
     private async Task AddAssistantResponseAsync(Guid conversationId, IList<OllamaChatMessage> messages, OllamaChatMessage? message, CancellationToken cancellationToken = default)
@@ -212,7 +229,7 @@ internal class OllamaClient : IOllamaClient
             Options = chatOptions,
             Stream = stream,
             Messages = messages.ToList(),
-            Model = !string.IsNullOrWhiteSpace(model) ? model : options.DefaultModel
+            Model = !string.IsNullOrWhiteSpace(model) ? model : options.DefaultChatModel
         };
 
         return request;

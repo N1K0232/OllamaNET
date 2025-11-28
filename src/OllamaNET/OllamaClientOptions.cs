@@ -10,7 +10,9 @@ public class OllamaClientOptions
 
     public string? ApiKey { get; set; }
 
-    public string DefaultModel { get; set; } = OllamaChatModels.LLama32;
+    public string DefaultChatModel { get; set; } = OllamaChatModels.LLama32;
+
+    public string DefaultEmbeddingModel { get; set; } = OllamaEmbeddingModels.NomicEmbedText;
 
     public int MessageLimit { get; set; } = 10;
 
