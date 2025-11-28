@@ -33,12 +33,18 @@ app.MapPost("/api/chat/stream", async (ChatRequest request, IOllamaClient client
     {
         var responseStream = client.AskStreamingAsync(request.ConversationId, request.Message, cancellationToken: httpContext.RequestAborted);
 
-        await foreach (var response in responseStream)
+        await foreach (var response in responseStream.WithCancellation(httpContext.RequestAborted))
         {
             await Task.Delay(10, httpContext.RequestAborted);
             yield return response.Message.Content;
         }
     }
+});
+
+app.MapPost("/api/embeddings", async (EmbeddingRequest request, IOllamaClient client, HttpContext httpContext) =>
+{
+    var response = await client.CreateEmbeddingAsync(request.Content, cancellationToken: httpContext.RequestAborted);
+    return TypedResults.Ok(response);
 });
 
 app.Run();
