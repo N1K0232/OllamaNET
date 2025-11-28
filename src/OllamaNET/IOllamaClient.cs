@@ -28,5 +28,7 @@ public interface IOllamaClient
 
     Task DeleteConversationAsync(Guid conversationId, bool preserveSetup = false, CancellationToken cancellationToken = default);
 
+    Task AddInteractionAsync(Guid conversationId, string question, string answer, CancellationToken cancellationToken = default);
+
     Task<OllamaEmbeddingResponse> CreateEmbeddingAsync(string content, string? model = null, CancellationToken cancellationToken = default);
 }

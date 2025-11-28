@@ -162,6 +162,28 @@ internal class OllamaClient : IOllamaClient
         }
     }
 
+    public async Task AddInteractionAsync(Guid conversationId, string question, string answer, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(question, nameof(question));
+        ArgumentException.ThrowIfNullOrWhiteSpace(answer, nameof(answer));
+
+        var messages = await cache.GetConversationAsync(conversationId, cancellationToken).ConfigureAwait(false) ?? [];
+        messages = messages.Union([
+            new()
+            {
+                Role = OllamaRoles.User,
+                Content = question
+            },
+            new()
+            {
+                Role = OllamaRoles.Assistant,
+                Content = answer
+            }
+        ]);
+
+        await UpdateCacheAsync(conversationId, messages, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<OllamaEmbeddingResponse> CreateEmbeddingAsync(string content, string? model = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(content, nameof(content));
