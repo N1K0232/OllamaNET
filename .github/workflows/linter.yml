@@ -49,7 +49,7 @@ jobs:
         env:
           LINTER_RULES_PATH: '.'
           EDITORCONFIG_FILE_NAME: '.editorconfig'
-          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_ALL_CODEBASE: true
           VALIDATE_CSHARP: true
           DEFAULT_BRANCH: master
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
