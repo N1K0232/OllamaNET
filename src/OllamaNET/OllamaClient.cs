@@ -204,6 +204,21 @@ internal class OllamaClient : IOllamaClient
         return response!;
     }
 
+    public async Task<Guid> LoadConversationAsync(Guid conversationId, IEnumerable<OllamaChatMessage> messages, bool replaceHistory = true, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(messages, nameof(messages));
+        conversationId = conversationId == Guid.Empty ? Guid.CreateVersion7() : conversationId;
+
+        if (!replaceHistory)
+        {
+            var conversationHistory = await cache.GetConversationAsync(conversationId, cancellationToken).ConfigureAwait(false) ?? [];
+            messages = conversationHistory.Union(messages);
+        }
+
+        await UpdateCacheAsync(conversationId, messages, cancellationToken).ConfigureAwait(false);
+        return conversationId;
+    }
+
     private static async Task<string> StreamToBase64Async(Stream stream, CancellationToken cancellationToken = default)
     {
         using var memoryStream = new MemoryStream();

@@ -28,6 +28,11 @@ public interface IOllamaClient
 
     Task DeleteConversationAsync(Guid conversationId, bool preserveSetup = false, CancellationToken cancellationToken = default);
 
+    Task<Guid> LoadConversationAsync(Guid conversationId, IEnumerable<OllamaChatMessage> messages, CancellationToken cancellationToken = default)
+        => LoadConversationAsync(conversationId, messages, true, cancellationToken);
+
+    Task<Guid> LoadConversationAsync(Guid conversationId, IEnumerable<OllamaChatMessage> messages, bool replaceHistory = true, CancellationToken cancellationToken = default);
+
     Task AddInteractionAsync(Guid conversationId, string question, string answer, CancellationToken cancellationToken = default);
 
     Task<OllamaEmbeddingResponse> CreateEmbeddingAsync(string content, string? model = null, CancellationToken cancellationToken = default);
