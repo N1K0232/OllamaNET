@@ -1,5 +1,4 @@
 ﻿using OllamaNET;
-using OllamaNET.Models;
 
 namespace OllamaNETConsoleApp;
 

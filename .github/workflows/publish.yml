@@ -1,9 +1,10 @@
 name: Publish OllamaNET on NuGet
 
 permissions:
-  contents: read
-  packages: write
-  actions: write
+  contents: write
+  checks: write
+  statuses: write
+  pull-requests: write
  
 on:
   push:

@@ -11,7 +11,7 @@ public interface IOllamaClient
 
     IAsyncEnumerable<OllamaChatResponse> AskStreamingAsync(string message, IEnumerable<Stream>? imagesStreams = null, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, CancellationToken cancellationToken = default)
         => AskStreamingAsync(Guid.CreateVersion7(), message, imagesStreams, model, chatOptions, addToConversationHistory, cancellationToken);
- 
+
     IAsyncEnumerable<OllamaChatResponse> AskStreamingAsync(Guid conversationId, string message, IEnumerable<Stream>? imagesStreams = null, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, CancellationToken cancellationToken = default);
 
     Task<Guid> SetupAsync(string message, CancellationToken cancellationToken = default)
