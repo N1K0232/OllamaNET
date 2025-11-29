@@ -29,7 +29,7 @@ public class OllamaChatOptions
     public int Seed { get; set; }
 
     [JsonPropertyName("stop")]
-    public string[] Stop { get; set; }
+    public string[]? Stop { get; set; }
 
     [JsonPropertyName("num_ctx")]
     public int NumCtx { get; set; }
