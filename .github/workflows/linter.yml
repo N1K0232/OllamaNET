@@ -2,6 +2,8 @@ name: Lint Code Base
 
 permissions:
   contents: read
+  checks: write
+  pull-requests: write
 
 #############################
 # Start the job on all push #
