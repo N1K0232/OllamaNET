@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/OllamaNET.WebApi/OllamaNET.WebApi.csproj" Id="a2144a73-0c16-40d6-a142-5767a1da8f3b" />
+    <Project Path="samples/OllamaNETConsoleApp/OllamaNETConsoleApp.csproj" Id="0dbca020-f345-48d5-a38a-0191d5c5d771" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/OllamaNET/OllamaNET.csproj" Id="34b95a24-e0c0-4a3c-8c7f-fa03a2fb3e16" />
+  </Folder>
+</Solution>
