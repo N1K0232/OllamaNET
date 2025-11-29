@@ -30,15 +30,17 @@ internal class OllamaClient : IOllamaClient
         this.options = options;
     }
 
-    public async Task<OllamaChatResponse> AskAsync(Guid conversationId, string message, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, CancellationToken cancellationToken = default)
+    public async Task<OllamaChatResponse> AskAsync(Guid conversationId, string message, IEnumerable<Stream>? imagesStreams, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message, nameof(message));
         conversationId = conversationId == Guid.Empty ? Guid.CreateVersion7() : conversationId;
 
         var messages = await CreateMessageListAsync(conversationId, message, cancellationToken).ConfigureAwait(false);
-        var request = CreateRequest(messages, false, chatOptions, model);
+        var images = imagesStreams is not null ? await StreamToBase64Async(imagesStreams, cancellationToken).ConfigureAwait(false) : null;
 
+        var request = CreateRequest(messages, false, chatOptions, model, images);
         using var httpResponse = await httpClient.PostAsJsonAsync("api/chat", request, cancellationToken).ConfigureAwait(false);
+
         if (!httpResponse.IsSuccessStatusCode)
         {
             var content = await httpResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
@@ -54,13 +56,15 @@ internal class OllamaClient : IOllamaClient
         return response!;
     }
 
-    public async IAsyncEnumerable<OllamaChatResponse> AskStreamingAsync(Guid conversationId, string message, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<OllamaChatResponse> AskStreamingAsync(Guid conversationId, string message, IEnumerable<Stream>? imagesStream = null, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message, nameof(message));
         conversationId = conversationId == Guid.Empty ? Guid.CreateVersion7() : conversationId;
 
         var messages = await CreateMessageListAsync(conversationId, message, cancellationToken).ConfigureAwait(false);
-        var request = CreateRequest(messages, true, chatOptions, model);
+        var images = imagesStream is not null ? await StreamToBase64Async(imagesStream, cancellationToken).ConfigureAwait(false) : null;
+
+        var request = CreateRequest(messages, true, chatOptions, model, images);
 
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/chat")
         {
@@ -200,6 +204,26 @@ internal class OllamaClient : IOllamaClient
         return response!;
     }
 
+    private static async Task<string> StreamToBase64Async(Stream stream, CancellationToken cancellationToken = default)
+    {
+        using var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream, cancellationToken).ConfigureAwait(false);
+
+        return Convert.ToBase64String(memoryStream.ToArray());
+    }
+
+    private static async Task<string[]> StreamToBase64Async(IEnumerable<Stream> streams, CancellationToken cancellationToken = default)
+    {
+        var images = new List<string>();
+
+        foreach (var stream in streams)
+        {
+            images.Add(await StreamToBase64Async(stream, cancellationToken).ConfigureAwait(false));
+        }
+
+        return [.. images];
+    }
+
     private async Task AddAssistantResponseAsync(Guid conversationId, IList<OllamaChatMessage> messages, OllamaChatMessage? message, CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrWhiteSpace(message?.Content?.Trim()))
@@ -244,13 +268,14 @@ internal class OllamaClient : IOllamaClient
         await cache.SetAsync(conversationId, messages, options.MessageExpiration, cancellationToken).ConfigureAwait(false);
     }
 
-    private OllamaChatRequest CreateRequest(IEnumerable<OllamaChatMessage> messages, bool stream, OllamaChatOptions? chatOptions, string? model)
+    private OllamaChatRequest CreateRequest(IEnumerable<OllamaChatMessage> messages, bool stream, OllamaChatOptions? chatOptions, string? model, string[]? images)
     {
         var request = new OllamaChatRequest
         {
             Options = chatOptions,
             Stream = stream,
             Messages = messages.ToList(),
+            Images = images,
             Model = !string.IsNullOrWhiteSpace(model) ? model : options.DefaultChatModel
         };
 

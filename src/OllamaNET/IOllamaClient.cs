@@ -4,15 +4,15 @@ namespace OllamaNET;
 
 public interface IOllamaClient
 {
-    Task<OllamaChatResponse> AskAsync(string message, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, CancellationToken cancellationToken = default)
-        => AskAsync(Guid.CreateVersion7(), message, model, chatOptions, addToConversationHistory, cancellationToken);
+    Task<OllamaChatResponse> AskAsync(string message, IEnumerable<Stream>? imagesStream = null, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, CancellationToken cancellationToken = default)
+        => AskAsync(Guid.CreateVersion7(), message, imagesStream, model, chatOptions, addToConversationHistory, cancellationToken);
 
-    Task<OllamaChatResponse> AskAsync(Guid conversationId, string message, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, CancellationToken cancellationToken = default);
+    Task<OllamaChatResponse> AskAsync(Guid conversationId, string message, IEnumerable<Stream>? imagesStream = null, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, CancellationToken cancellationToken = default);
 
-    IAsyncEnumerable<OllamaChatResponse> AskStreamingAsync(string message, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, CancellationToken cancellationToken = default)
-        => AskStreamingAsync(Guid.CreateVersion7(), message, model, chatOptions, addToConversationHistory, cancellationToken);
-
-    IAsyncEnumerable<OllamaChatResponse> AskStreamingAsync(Guid conversationId, string message, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<OllamaChatResponse> AskStreamingAsync(string message, IEnumerable<Stream>? imagesStreams = null, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, CancellationToken cancellationToken = default)
+        => AskStreamingAsync(Guid.CreateVersion7(), message, imagesStreams, model, chatOptions, addToConversationHistory, cancellationToken);
+ 
+    IAsyncEnumerable<OllamaChatResponse> AskStreamingAsync(Guid conversationId, string message, IEnumerable<Stream>? imagesStreams = null, string? model = null, OllamaChatOptions? chatOptions = null, bool addToConversationHistory = true, CancellationToken cancellationToken = default);
 
     Task<Guid> SetupAsync(string message, CancellationToken cancellationToken = default)
         => SetupAsync(Guid.CreateVersion7(), message, cancellationToken);
