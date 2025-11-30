@@ -199,8 +199,13 @@ internal class OllamaClient : IOllamaClient
         };
 
         using var httpResponse = await httpClient.PostAsJsonAsync("api/embeddings", request, cancellationToken).ConfigureAwait(false);
-        var response = await httpResponse.Content.ReadFromJsonAsync<OllamaEmbeddingResponse>(cancellationToken).ConfigureAwait(false);
+        if (!httpResponse.IsSuccessStatusCode)
+        {
+            var errorMessage = await httpResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            throw new EmbeddingException(errorMessage, (int)httpResponse.StatusCode);
+        }
 
+        var response = await httpResponse.Content.ReadFromJsonAsync<OllamaEmbeddingResponse>(cancellationToken).ConfigureAwait(false);
         return response!;
     }
 
@@ -289,7 +294,7 @@ internal class OllamaClient : IOllamaClient
         {
             Options = chatOptions,
             Stream = stream,
-            Messages = messages.ToList(),
+            Messages = [..messages],
             Images = images,
             Model = !string.IsNullOrWhiteSpace(model) ? model : options.DefaultChatModel
         };
