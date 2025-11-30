@@ -289,7 +289,7 @@ internal class OllamaClient : IOllamaClient
         {
             Options = chatOptions,
             Stream = stream,
-            Messages = messages.ToList(),
+            Messages = [..messages],
             Images = images,
             Model = !string.IsNullOrWhiteSpace(model) ? model : options.DefaultChatModel
         };
