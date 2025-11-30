@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OllamaNET.Caching;
@@ -13,6 +14,23 @@ public static class OllamaClientServiceCollectionExtensions
         var options = new OllamaClientOptions();
         setupAction?.Invoke(options);
 
+        services.AddSingleton(options);
+
+        var httpClientBuilder = services.AddHttpClient<IOllamaClient, OllamaClient>(httpClient =>
+        {
+            httpClient.BaseAddress = new Uri(options.ServiceUrl);
+        });
+
+        return new DefaultOllamaClientBuilder(services, httpClientBuilder);
+    }
+
+    public static IOllamaClientBuilder AddOllamaClient(this IServiceCollection services, IConfiguration configuration, string sectionName = "Ollama")
+    {
+        ArgumentNullException.ThrowIfNull(services, nameof(services));
+        ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
+        ArgumentException.ThrowIfNullOrWhiteSpace(sectionName, nameof(sectionName));
+
+        var options = configuration.GetSection(sectionName).Get<OllamaClientOptions>() ?? new OllamaClientOptions();
         services.AddSingleton(options);
 
         var httpClientBuilder = services.AddHttpClient<IOllamaClient, OllamaClient>(httpClient =>
