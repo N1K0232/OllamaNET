@@ -10,6 +10,9 @@ internal class OllamaChatRequest
     [JsonPropertyName("messages")]
     public IList<OllamaChatMessage> Messages { get; set; } = [];
 
+    [JsonPropertyName("system")]
+    public string? System { get; set; }
+
     [JsonPropertyName("stream")]
     public bool Stream { get; set; } = true;
 

@@ -80,34 +80,35 @@ internal class OllamaClient : IOllamaClient
 
         var contentBuilder = new StringBuilder();
 
-        using var responseStream = await httpResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        using var streamReader = new StreamReader(responseStream);
-
-        string? line = null;
-
-        while ((line = await streamReader.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != null)
+        using (var responseStream = await httpResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
         {
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                continue;
-            }
+            using var streamReader = new StreamReader(responseStream);
+            string? line = null;
 
-            var chunk = JsonSerializer.Deserialize<OllamaStreamChunk>(line);
-            if (chunk?.Message?.Content is not null)
+            while ((line = await streamReader.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != null)
             {
-                var content = chunk.Message.Content;
-                contentBuilder.Append(content);
-
-                yield return new OllamaChatResponse
+                if (string.IsNullOrWhiteSpace(line))
                 {
-                    Message = chunk.Message,
-                    Model = chunk.Model!
-                };
-            }
+                    continue;
+                }
 
-            if (chunk?.Done ?? false)
-            {
-                break;
+                var chunk = JsonSerializer.Deserialize<OllamaStreamChunk>(line);
+                if (chunk?.Message?.Content is not null)
+                {
+                    var content = chunk.Message.Content;
+                    contentBuilder.Append(content);
+
+                    yield return new OllamaChatResponse
+                    {
+                        Message = chunk.Message,
+                        Model = chunk.Model!
+                    };
+                }
+
+                if (chunk?.Done ?? false)
+                {
+                    break;
+                }
             }
         }
 
@@ -290,10 +291,13 @@ internal class OllamaClient : IOllamaClient
 
     private OllamaChatRequest CreateRequest(IEnumerable<OllamaChatMessage> messages, bool stream, OllamaChatOptions? chatOptions, string? model, string[]? images)
     {
+        var systemMessage = messages.FirstOrDefault(m => m.Role == OllamaRoles.System);
+
         var request = new OllamaChatRequest
         {
             Options = chatOptions,
             Stream = stream,
+            System = systemMessage?.Content,
             Messages = [..messages],
             Images = images,
             Model = !string.IsNullOrWhiteSpace(model) ? model : options.DefaultChatModel
